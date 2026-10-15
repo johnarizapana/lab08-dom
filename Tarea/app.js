@@ -1,6 +1,7 @@
-// Laboratorio 08 - Tarea: Gestor de Tareas Interactivo
+// Laboratorio 08: DISAVIP - Tarea Final
+// Autor: John Ricardo Arizapana Flores
 
-// 1. Definición de la Clase Tarea (Clase propia)
+// 1. CLASE PROPIA
 class Tarea {
   constructor(id, titulo, prioridad) {
     this.id = id;
@@ -18,29 +19,31 @@ class Tarea {
   }
 }
 
-// 2. Clase Gestora para administrar la lista
+// 2. CLASE GESTORA
 class GestorTareas {
   constructor() {
-    this.tareas = [];
+    this.items = [];
   }
 
   agregar(tarea) {
-    this.tareas.push(tarea);
+    this.items.push(tarea);
   }
 
   eliminar(id) {
-    this.tareas = this.tareas.filter((t) => t.id !== id);
+    this.items = this.items.filter((item) => item.id !== id);
   }
 
-  obtenerPorId(id) {
-    return this.tareas.find((t) => t.id === id);
+  obtenerFiltradas(criterio) {
+    return this.items.filter((item) =>
+      item.titulo.toLowerCase().includes(criterio.toLowerCase())
+    );
   }
 }
 
-// Instancia global del gestor
+// Instancia principal del gestor
 const gestor = new GestorTareas();
 
-// Seleccionadores del DOM
+// 3. SELECCIÓN DE ELEMENTOS DEL DOM
 const formTarea = document.querySelector("#formTarea");
 const inputTitulo = document.querySelector("#inputTitulo");
 const selectPrioridad = document.querySelector("#selectPrioridad");
@@ -50,14 +53,15 @@ const inputBuscar = document.querySelector("#inputBuscar");
 const contadorTareas = document.querySelector("#contadorTareas");
 const listaTareas = document.querySelector("#listaTareas");
 
-// Función para renderizar la lista en el DOM
-function renderizarTareas(filtro = "") {
-  listaTareas.innerHTML = "";
-  const tareasFiltradas = gestor.tareas.filter((t) =>
-    t.titulo.toLowerCase().includes(filtro.toLowerCase())
-  );
+// 4. FUNCIÓN PARA RENDERIZAR LA INTERFAZ
+function renderizarTareas() {
+  const criterio = inputBuscar.value;
+  const tareasVisibles = gestor.obtenerFiltradas(criterio);
 
-  tareasFiltradas.forEach((tarea) => {
+  listaTareas.innerHTML = "";
+
+  tareasVisibles.forEach((tarea) => {
+    // Creación dinámica de elementos del DOM
     const li = document.createElement("li");
     li.className = "tarea-item";
 
@@ -68,29 +72,28 @@ function renderizarTareas(filtro = "") {
     }
 
     const divAcciones = document.createElement("div");
+    divAcciones.className = "acciones";
 
-    const btnEstado = document.createElement("button");
-    btnEstado.textContent = tarea.completada ? "Desmarcar" : "Completar";
-    btnEstado.className = "btn-completar";
-    
-    // EVENTO 1: Click en botón completar
-    btnEstado.addEventListener("click", () => {
+    // Botón para cambiar estado (Evento Click 1)
+    const btnCompletar = document.createElement("button");
+    btnCompletar.textContent = tarea.completada ? "Desmarcar" : "Completar";
+    btnCompletar.className = "btn-completar";
+    btnCompletar.addEventListener("click", () => {
       tarea.conmutarEstado();
-      renderizarTareas(inputBuscar.value);
+      renderizarTareas();
     });
 
+    // Botón para eliminar elemento (Evento Click 2 y eliminación del DOM)
     const btnEliminar = document.createElement("button");
     btnEliminar.textContent = "Borrar";
     btnEliminar.className = "btn-eliminar";
-    
-    // EVENTO 2: Click en botón eliminar (modificación/eliminación de nodos)
     btnEliminar.addEventListener("click", () => {
       gestor.eliminar(tarea.id);
-      li.remove(); // Eliminación directa del elemento DOM
+      li.remove();
       actualizarContador();
     });
 
-    divAcciones.appendChild(btnEstado);
+    divAcciones.appendChild(btnCompletar);
     divAcciones.appendChild(btnEliminar);
 
     li.appendChild(spanTexto);
@@ -99,35 +102,40 @@ function renderizarTareas(filtro = "") {
     listaTareas.appendChild(li);
   });
 
-  actualizarContador(tareasFiltradas.length);
+  actualizarContador();
 }
 
-function actualizarContador(total = gestor.tareas.length) {
-  contadorTareas.textContent = total;
+function actualizarContador() {
+  const criterio = inputBuscar.value;
+  const visibles = gestor.obtenerFiltradas(criterio);
+  contadorTareas.textContent = visibles.length;
 }
 
-// EVENTO 3: Submit con validación de formulario
+// 5. MANEJADORES DE EVENTOS PRINCIPALES
+
+// EVENTO 1: SUBMIT (Envío de formulario con validación)
 formTarea.addEventListener("submit", (evento) => {
   evento.preventDefault();
 
   const tituloVal = inputTitulo.value.trim();
 
-  // Validación: Título vacíó o muy corto
+  // Validación: mínimo 3 caracteres
   if (tituloVal.length < 3) {
-    mensajeError.textContent = "El título debe tener al menos 3 caracteres.";
+    mensajeError.textContent = "El título debe contener al menos 3 caracteres.";
     mensajeError.style.display = "block";
     return;
   }
 
   mensajeError.style.display = "none";
+
   const nuevaTarea = new Tarea(Date.now(), tituloVal, selectPrioridad.value);
   gestor.agregar(nuevaTarea);
 
-  renderizarTareas(inputBuscar.value);
+  renderizarTareas();
   formTarea.reset();
 });
 
-// EVENTO 4: Input en tiempo real para búsqueda
+// EVENTO 2: INPUT (Búsqueda interactiva en tiempo real)
 inputBuscar.addEventListener("input", () => {
-  renderizarTareas(inputBuscar.value);
+  renderizarTareas();
 });
